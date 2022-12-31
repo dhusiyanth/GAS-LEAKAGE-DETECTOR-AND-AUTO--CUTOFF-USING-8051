@@ -1,0 +1,73 @@
+#include <reg52.h>
+sbit red=P0^1;
+sbit green=P0^2;
+sbit buzzer=P0^4;
+sbit gas=P0^3;
+sbit output=P3^0;
+#include <intrins.h>
+#define PWM_Period 0xB7FE
+sbit Servo_Motor_Pin = P3^1;
+unsigned int ON_Period, OFF_Period, DutyCycle;
+
+		   A
+
+void Timer_init()
+{
+	TMOD = 0x01;		
+	TH0 = (PWM_Period >> 8);
+	TL0 = PWM_Period;
+	TR0 = 1;		
+}
+
+
+void Timer0_ISR() interrupt 1	
+{
+	Servo_Motor_Pin = !Servo_Motor_Pin;
+	if(Servo_Motor_Pin)
+	{
+		TH0 = (ON_Period >> 8);
+		TL0 = ON_Period;
+	}	
+	else
+	{
+		TH0 = (OFF_Period >> 8);
+		TL0 = OFF_Period;
+	}	
+			
+}
+
+
+void Set_DutyCycle_To(float duty_cycle)
+{
+	float period = 65535 - PWM_Period;
+	ON_Period = ((period/100.0) * duty_cycle);
+	OFF_Period = (period - ON_Period);	
+	ON_Period = 65535 - ON_Period;	
+	OFF_Period = 65535 - OFF_Period;
+}
+
+int main()
+{
+   EA  = 1;		
+   ET0 = 1;         	
+   Timer_init();
+   while(1)
+	if(gas==0)
+	{
+	red=0;
+	buzzer=0;
+	green=1;
+	output=0;
+	Set_DutyCycle_To(12);
+
+    }
+	else
+	{
+	green=0;
+	red=1;
+	buzzer=1;
+	output=1;
+	Set_DutyCycle_To(7);
+	
+	}
+}
